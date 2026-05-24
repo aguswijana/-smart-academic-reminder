@@ -3,20 +3,18 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import {
-    Mail,
-    Lock,
-    Eye,
-    EyeOff,
-    GraduationCap
-} from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, GraduationCap, User } from 'lucide-react'
 
 export default function LoginPage() {
+    const [mode, setMode] = useState<'login' | 'register'>('login')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
+    const [confirmPassword, setConfirmPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
+    const [success, setSuccess] = useState('')
     const [showPassword, setShowPassword] = useState(false)
+    const [showConfirm, setShowConfirm] = useState(false)
 
     const router = useRouter()
     const supabase = createClient()
@@ -25,11 +23,9 @@ export default function LoginPage() {
         e.preventDefault()
         setLoading(true)
         setError('')
+        setSuccess('')
 
-        const { error } = await supabase.auth.signInWithPassword({
-            email,
-            password
-        })
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
 
         if (error) {
             setError('Email atau password salah')
@@ -44,11 +40,21 @@ export default function LoginPage() {
         e.preventDefault()
         setLoading(true)
         setError('')
+        setSuccess('')
 
-        const { error } = await supabase.auth.signUp({
-            email,
-            password
-        })
+        if (password !== confirmPassword) {
+            setError('Password dan konfirmasi password tidak sama!')
+            setLoading(false)
+            return
+        }
+
+        if (password.length < 6) {
+            setError('Password minimal 6 karakter!')
+            setLoading(false)
+            return
+        }
+
+        const { error } = await supabase.auth.signUp({ email, password })
 
         if (error) {
             setError(error.message)
@@ -56,8 +62,18 @@ export default function LoginPage() {
             return
         }
 
-        setError('Cek email kamu untuk konfirmasi!')
+        setSuccess('Akun berhasil dibuat! Cek email kamu untuk konfirmasi, lalu login.')
         setLoading(false)
+        setPassword('')
+        setConfirmPassword('')
+    }
+
+    const switchMode = (newMode: 'login' | 'register') => {
+        setMode(newMode)
+        setError('')
+        setSuccess('')
+        setPassword('')
+        setConfirmPassword('')
     }
 
     return (
@@ -71,159 +87,138 @@ export default function LoginPage() {
             <div className="relative w-full max-w-md rounded-3xl border border-white/20 bg-white/10 backdrop-blur-xl p-8 shadow-2xl">
 
                 {/* Logo */}
-                <div className="text-center mb-8">
-                    <div className="w-24 h-24 mx-auto rounded-full bg-white/10 flex items-center justify-center border border-white/20 mb-5">
-                        <GraduationCap className="text-white" size={42} />
+                <div className="text-center mb-6">
+                    <div className="w-20 h-20 mx-auto rounded-full bg-white/10 flex items-center justify-center border border-white/20 mb-4">
+                        <GraduationCap className="text-white" size={38} />
                     </div>
-
-                    <h1 className="text-5xl font-bold text-white tracking-wide">
-                        SAR
-                    </h1>
-
-                    <p className="text-white/70 mt-2">
-                        Smart Academic Reminder
-                    </p>
+                    <h1 className="text-4xl font-bold text-white tracking-wide">SAR</h1>
+                    <p className="text-white/70 mt-1 text-sm">Smart Academic Reminder</p>
                 </div>
 
-                {/* Error */}
+                {/* Tab Switch */}
+                <div className="flex rounded-2xl bg-white/10 p-1 mb-6">
+                    <button
+                        type="button"
+                        onClick={() => switchMode('login')}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                            mode === 'login'
+                                ? 'bg-white/20 text-white shadow'
+                                : 'text-white/60 hover:text-white'
+                        }`}
+                    >
+                        Login
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => switchMode('register')}
+                        className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                            mode === 'register'
+                                ? 'bg-white/20 text-white shadow'
+                                : 'text-white/60 hover:text-white'
+                        }`}
+                    >
+                        Daftar
+                    </button>
+                </div>
+
+                {/* Error & Success */}
                 {error && (
                     <div className="bg-red-500/20 border border-red-300 text-white text-sm rounded-xl p-3 mb-4 text-center">
                         {error}
                     </div>
                 )}
+                {success && (
+                    <div className="bg-green-500/20 border border-green-300 text-white text-sm rounded-xl p-3 mb-4 text-center">
+                        {success}
+                    </div>
+                )}
 
-                <form className="space-y-5">
+                <form className="space-y-4" onSubmit={mode === 'login' ? handleLogin : handleRegister}>
 
-                   {/* Email */}
-<div>
-    <label className="text-white/80 text-sm mb-2 block">
-        Email
-    </label>
-
-    <div className="flex items-center rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md px-4">
-
-        <Mail size={18} className="text-white/70" />
-
-        <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="email@kamu.com"
-            className="
-                w-full
-                bg-transparent
-                border-none
-                outline-none
-                focus:outline-none
-                focus:ring-0
-                px-3
-                py-4
-                text-white
-                placeholder:text-white/50
-            "
-        />
-    </div>
-</div>
+                    {/* Email */}
+                    <div>
+                        <label className="text-white/80 text-sm mb-2 block">Email</label>
+                        <div className="flex items-center rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md px-4">
+                            <Mail size={18} className="text-white/70 flex-shrink-0" />
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="email@kamu.com"
+                                required
+                                className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 px-3 py-4 text-white placeholder:text-white/50 text-sm"
+                            />
+                        </div>
+                    </div>
 
                     {/* Password */}
-<div>
-    <label className="text-white/80 text-sm mb-2 block">
-        Password
-    </label>
-
-    <div className="flex items-center rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md px-4">
-
-        <Lock size={18} className="text-white/70" />
-
-        <input
-            type={showPassword ? 'text' : 'password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            className="
-                w-full
-                bg-transparent
-                border-none
-                outline-none
-                focus:outline-none
-                focus:ring-0
-                px-3
-                py-4
-                text-white
-                placeholder:text-white/50
-            "
-        />
-
-        <button
-            type="button"
-            onClick={() =>
-                setShowPassword(!showPassword)
-            }
-        >
-            {showPassword ? (
-                <EyeOff
-                    size={18}
-                    className="text-white/70"
-                />
-            ) : (
-                <Eye
-                    size={18}
-                    className="text-white/70"
-                />
-            )}
-        </button>
-    </div>
-</div>
-
-                    {/* Remember */}
-                    <div className="flex justify-between items-center text-sm">
-                        <label className="flex items-center gap-2 text-white/70">
-                            <input type="checkbox" />
-                            Remember me
-                        </label>
-
-                        <button
-                            type="button"
-                            className="text-white hover:underline"
-                        >
-                            Forgot password?
-                        </button>
+                    <div>
+                        <label className="text-white/80 text-sm mb-2 block">Password</label>
+                        <div className="flex items-center rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md px-4">
+                            <Lock size={18} className="text-white/70 flex-shrink-0" />
+                            <input
+                                type={showPassword ? 'text' : 'password'}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                                required
+                                className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 px-3 py-4 text-white placeholder:text-white/50 text-sm"
+                            />
+                            <button type="button" onClick={() => setShowPassword(!showPassword)}>
+                                {showPassword ? <EyeOff size={18} className="text-white/70" /> : <Eye size={18} className="text-white/70" />}
+                            </button>
+                        </div>
                     </div>
-{/* Login */}
-<button
-    onClick={handleLogin}
-    disabled={loading}
-    className="
-        w-full
-        py-4
-        rounded-2xl
-        bg-white/10
-        backdrop-blur-md
-        border
-        border-white/20
-        text-white
-        font-bold
-        text-lg
-        hover:bg-white/20
-        hover:scale-[1.02]
-        transition-all
-        duration-300
-        shadow-lg
-        disabled:opacity-50
-    "
->
-    {loading ? 'Loading...' : 'Login'}
-</button>
 
-                    {/* Divider */}
-                    <div className="flex items-center gap-3">
-                        <div className="flex-1 h-px bg-white/20"></div>
-                        <span className="text-white/50 text-sm">atau</span>
-                        <div className="flex-1 h-px bg-white/20"></div>
-                    </div>
+                    {/* Confirm Password - hanya saat register */}
+                    {mode === 'register' && (
+                        <div>
+                            <label className="text-white/80 text-sm mb-2 block">Konfirmasi Password</label>
+                            <div className="flex items-center rounded-2xl border border-white/20 bg-white/5 backdrop-blur-md px-4">
+                                <Lock size={18} className="text-white/70 flex-shrink-0" />
+                                <input
+                                    type={showConfirm ? 'text' : 'password'}
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                    required
+                                    className="w-full bg-transparent border-none outline-none focus:outline-none focus:ring-0 px-3 py-4 text-white placeholder:text-white/50 text-sm"
+                                />
+                                <button type="button" onClick={() => setShowConfirm(!showConfirm)}>
+                                    {showConfirm ? <EyeOff size={18} className="text-white/70" /> : <Eye size={18} className="text-white/70" />}
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Submit */}
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold text-base hover:bg-white/20 hover:scale-[1.02] transition-all duration-300 shadow-lg disabled:opacity-50 mt-2"
+                    >
+                        {loading ? 'Loading...' : mode === 'login' ? 'Login' : 'Daftar'}
+                    </button>
+
+                    {/* Switch mode */}
+                    <p className="text-center text-white/60 text-sm">
+                        {mode === 'login' ? (
+                            <>Belum punya akun?{' '}
+                                <button type="button" onClick={() => switchMode('register')} className="text-white font-semibold hover:underline">
+                                    Daftar sekarang
+                                </button>
+                            </>
+                        ) : (
+                            <>Sudah punya akun?{' '}
+                                <button type="button" onClick={() => switchMode('login')} className="text-white font-semibold hover:underline">
+                                    Login
+                                </button>
+                            </>
+                        )}
+                    </p>
+
                 </form>
             </div>
         </div>
     )
 }
-                  
