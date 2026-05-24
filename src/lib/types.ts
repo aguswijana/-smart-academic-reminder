@@ -30,7 +30,14 @@ export type Tugas = {
   reminder_hari_h: boolean
   created_at?: string
 }
-
+export type Notification = {
+  id: string
+  user_id: string
+  pesan: string
+  tipe: string
+  is_read: boolean
+  created_at: string
+}
 export type Notifikasi = {
   id: string
   user_id: string
