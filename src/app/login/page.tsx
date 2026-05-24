@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import { useRouter } from 'next/navigation'
-import { Mail, Lock, Eye, EyeOff, GraduationCap, User } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, GraduationCap } from 'lucide-react'
 
 export default function LoginPage() {
     const [mode, setMode] = useState<'login' | 'register'>('login')
@@ -12,7 +12,6 @@ export default function LoginPage() {
     const [confirmPassword, setConfirmPassword] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
-    const [success, setSuccess] = useState('')
     const [showPassword, setShowPassword] = useState(false)
     const [showConfirm, setShowConfirm] = useState(false)
 
@@ -23,7 +22,6 @@ export default function LoginPage() {
         e.preventDefault()
         setLoading(true)
         setError('')
-        setSuccess('')
 
         const { error } = await supabase.auth.signInWithPassword({ email, password })
 
@@ -40,7 +38,6 @@ export default function LoginPage() {
         e.preventDefault()
         setLoading(true)
         setError('')
-        setSuccess('')
 
         if (password !== confirmPassword) {
             setError('Password dan konfirmasi password tidak sama!')
@@ -54,24 +51,29 @@ export default function LoginPage() {
             return
         }
 
-        const { error } = await supabase.auth.signUp({ email, password })
+        const { error: signUpError } = await supabase.auth.signUp({ email, password })
 
-        if (error) {
-            setError(error.message)
+        if (signUpError) {
+            setError(signUpError.message)
             setLoading(false)
             return
         }
 
-        setSuccess('Akun berhasil dibuat! Cek email kamu untuk konfirmasi, lalu login.')
-        setLoading(false)
-        setPassword('')
-        setConfirmPassword('')
+        // Langsung login setelah daftar
+        const { error: loginError } = await supabase.auth.signInWithPassword({ email, password })
+
+        if (loginError) {
+            setError('Akun dibuat! Silakan login.')
+            setLoading(false)
+            return
+        }
+
+        router.push('/dashboard')
     }
 
     const switchMode = (newMode: 'login' | 'register') => {
         setMode(newMode)
         setError('')
-        setSuccess('')
         setPassword('')
         setConfirmPassword('')
     }
@@ -79,11 +81,9 @@ export default function LoginPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-700 via-purple-700 to-blue-600 p-4 overflow-hidden">
 
-            {/* Blur Background */}
             <div className="absolute w-72 h-72 bg-pink-400 rounded-full blur-3xl opacity-20 top-0 left-0"></div>
             <div className="absolute w-72 h-72 bg-blue-300 rounded-full blur-3xl opacity-20 bottom-0 right-0"></div>
 
-            {/* Card */}
             <div className="relative w-full max-w-md rounded-3xl border border-white/20 bg-white/10 backdrop-blur-xl p-8 shadow-2xl">
 
                 {/* Logo */}
@@ -95,15 +95,13 @@ export default function LoginPage() {
                     <p className="text-white/70 mt-1 text-sm">Smart Academic Reminder</p>
                 </div>
 
-                {/* Tab Switch */}
+                {/* Tab */}
                 <div className="flex rounded-2xl bg-white/10 p-1 mb-6">
                     <button
                         type="button"
                         onClick={() => switchMode('login')}
                         className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                            mode === 'login'
-                                ? 'bg-white/20 text-white shadow'
-                                : 'text-white/60 hover:text-white'
+                            mode === 'login' ? 'bg-white/20 text-white shadow' : 'text-white/60 hover:text-white'
                         }`}
                     >
                         Login
@@ -112,28 +110,25 @@ export default function LoginPage() {
                         type="button"
                         onClick={() => switchMode('register')}
                         className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 ${
-                            mode === 'register'
-                                ? 'bg-white/20 text-white shadow'
-                                : 'text-white/60 hover:text-white'
+                            mode === 'register' ? 'bg-white/20 text-white shadow' : 'text-white/60 hover:text-white'
                         }`}
                     >
                         Daftar
                     </button>
                 </div>
 
-                {/* Error & Success */}
+                {/* Error */}
                 {error && (
-                    <div className="bg-red-500/20 border border-red-300 text-white text-sm rounded-xl p-3 mb-4 text-center">
+                    <div className={`border text-white text-sm rounded-xl p-3 mb-4 text-center ${
+                        error.includes('Akun dibuat')
+                            ? 'bg-green-500/20 border-green-300'
+                            : 'bg-red-500/20 border-red-300'
+                    }`}>
                         {error}
                     </div>
                 )}
-                {success && (
-                    <div className="bg-green-500/20 border border-green-300 text-white text-sm rounded-xl p-3 mb-4 text-center">
-                        {success}
-                    </div>
-                )}
 
-                <form className="space-y-4" onSubmit={mode === 'login' ? handleLogin : handleRegister}>
+                <form onSubmit={mode === 'login' ? handleLogin : handleRegister} className="space-y-4">
 
                     {/* Email */}
                     <div>
@@ -170,7 +165,7 @@ export default function LoginPage() {
                         </div>
                     </div>
 
-                    {/* Confirm Password - hanya saat register */}
+                    {/* Konfirmasi Password - hanya saat register */}
                     {mode === 'register' && (
                         <div>
                             <label className="text-white/80 text-sm mb-2 block">Konfirmasi Password</label>
@@ -195,7 +190,7 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full py-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold text-base hover:bg-white/20 hover:scale-[1.02] transition-all duration-300 shadow-lg disabled:opacity-50 mt-2"
+                        className="w-full py-4 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white font-bold text-base hover:bg-white/20 hover:scale-[1.02] transition-all duration-300 shadow-lg disabled:opacity-50"
                     >
                         {loading ? 'Loading...' : mode === 'login' ? 'Login' : 'Daftar'}
                     </button>
