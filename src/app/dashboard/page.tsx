@@ -40,14 +40,12 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      // Ambil profil dari tabel users
       const { data: profile } = await supabase
         .from('users')
         .select('*')
         .eq('id', user.id)
         .single()
 
-      // Tampilkan nama lengkap kalau ada, fallback ke email
       setUserName(profile?.full_name || user.email?.split('@')[0] || 'Pengguna')
       setUserId(user.id)
 
@@ -128,14 +126,30 @@ export default function DashboardPage() {
       <nav className={`${c.nav} border-b sticky top-0 z-30 px-6 py-4`}>
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-indigo-500/30">
-              S
-            </div>
+
+            {/* Logo SVG */}
+            <svg width="36" height="36" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="navGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" style={{ stopColor: '#6366f1' }} />
+                  <stop offset="100%" style={{ stopColor: '#a855f7' }} />
+                </linearGradient>
+              </defs>
+              <rect width="240" height="240" rx="52" fill="url(#navGrad1)" />
+              <rect x="55" y="65" width="130" height="100" rx="8" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.4)" strokeWidth="2" />
+              <rect x="55" y="65" width="130" height="14" rx="8" fill="rgba(255,255,255,0.35)" />
+              <line x1="73" y1="97" x2="167" y2="97" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" />
+              <line x1="73" y1="111" x2="167" y2="111" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" />
+              <line x1="73" y1="125" x2="140" y2="125" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" />
+              <polygon points="170,62 175,73 188,73 178,81 182,92 170,85 158,92 162,81 152,73 165,73" fill="#fbbf24" stroke="#f59e0b" strokeWidth="1" />
+            </svg>
+
             <div>
-              <h1 className={`font-bold text-base ${c.text}`}>SARS</h1>
+              <h1 className={`font-bold text-base ${c.text}`}>SAR</h1>
               <p className={`text-xs ${c.sub}`}>Smart Academic Reminder</p>
             </div>
           </div>
+
           <div className="flex items-center gap-3">
             <div className={`hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl ${c.inner}`}>
               <div className="w-6 h-6 rounded-full bg-indigo-600 flex items-center justify-center text-white text-xs font-bold">
